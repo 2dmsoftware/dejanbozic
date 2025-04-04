@@ -16,16 +16,19 @@ export const [setLibs, getLibs] = (() => {
     (prodLibs, location) => {
       libs = (() => {
         const { hostname, search } = location || window.location;
-        if (!(hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
+        if (!(hostname.includes('.aem.') || hostname.includes('local')))
+          return prodLibs;
         const branch = new URLSearchParams(search).get('milolibs') || 'main';
         if (branch === 'local') return 'http://localhost:6456/libs';
-        return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
+        return branch.includes('--')
+          ? `https://${branch}.aem.live/libs`
+          : `https://${branch}--milo--adobecom.aem.live/libs`;
       })();
       return libs;
-    }, () => libs,
+    },
+    () => libs,
   ];
 })();
-
 
 function decorateArea(area = document) {
   const eagerLoad = (parent, selector) => {
@@ -39,12 +42,12 @@ function decorateArea(area = document) {
       eagerLoad(document, 'img');
       return;
     }
-  
+
     // First image of first row
     eagerLoad(marquee, 'div:first-child img');
     // Last image of last column of last row
     eagerLoad(marquee, 'div:last-child > div:last-child img');
-  }());
+  })();
 }
 
 // Add project-wide style path here.
@@ -82,18 +85,36 @@ const miloLibs = setLibs(LIBS);
 
 (function loadStyles() {
   const paths = [`${miloLibs}/styles/styles.css`];
-  if (STYLES) { paths.push(STYLES); }
+  if (STYLES) {
+    paths.push(STYLES);
+  }
   paths.forEach((path) => {
     const link = document.createElement('link');
     link.setAttribute('rel', 'stylesheet');
     link.setAttribute('href', path);
     document.head.appendChild(link);
   });
-}());
+})();
 
 (async function loadPage() {
   const { loadArea, setConfig } = await import(`${miloLibs}/utils/utils.js`);
   const config = setConfig({ ...CONFIG, miloLibs });
   console.log(config);
   await loadArea();
-}());
+  initSidekick();
+})();
+
+export function initSidekick() {
+  const initPlugins = async () => {
+    const { default: init } = await import('./sidekick.js');
+    init();
+  };
+
+  if (document.querySelector('helix-sidekick')) {
+    initPlugins();
+  } else {
+    document.addEventListener('sidekick-ready', () => {
+      initPlugins();
+    });
+  }
+}
